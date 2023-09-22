@@ -42,7 +42,6 @@ int main() {
     std::stack<pathinfo> stack;
     std::vector<fs::path> dirs;
     std::vector<fs::path> files;
-    std::vector<fs::path> composite;
 
     stack.push(pathinfo(".", -1, "", false));
 
@@ -62,7 +61,6 @@ int main() {
             stack.pop();
             dirs.clear();
             files.clear();
-            composite.clear();
 
             for (const auto &entry: iterator) {
                 const fs::path &inner_path = entry.path();
@@ -76,17 +74,21 @@ int main() {
             std::sort(dirs.begin(), dirs.end(), std::greater<>());
             std::sort(files.begin(), files.end(), std::greater<>());
 
-            for (const auto &file: files) {
-                composite.push_back(file);
-            }
-            for (const auto &dir: dirs) {
-                composite.push_back(dir);
-            }
-            for (int i = 0; i < composite.size(); ++i) {
-                if (i != 0) {
-                    stack.push(pathinfo(composite.at(i), depth + 1, way, true));
-                } else {
-                    stack.push(pathinfo(composite.at(i), depth + 1, way, false));
+            int next_depth = depth + 1;
+            if (!files.empty()) {
+                stack.push(pathinfo(files.at(0), next_depth, way, false));
+                for (int i = 1; i < files.size(); ++i) {
+                    stack.push(pathinfo(files.at(i), next_depth, way, true));
+                }
+                for (const auto &dir: dirs) {
+                    stack.push(pathinfo(dir, next_depth, way, true));
+                }
+            } else {
+                if (!dirs.empty()) {
+                    stack.push(pathinfo(dirs.at(0), next_depth, way, false));
+                    for (int i = 1; i < dirs.size(); ++i) {
+                        stack.push(pathinfo(dirs.at(i), next_depth, way, true));
+                    }
                 }
             }
         } else if (fs::is_regular_file(path)) {
